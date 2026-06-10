@@ -1,3 +1,8 @@
+
+## 未发布
+
+- `Rollcall` 新增 `createdByName`（教师姓名）字段。
+- `StudentRollcallsData` 新增 `courseTitle`、`classroom`、`teacher` 字段，补齐签到详情。
 # 0.1.0
 
 - 初版：复刻 CQUPT-CAS-SDK + rollcall-go 的核心客户端能力。

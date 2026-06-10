@@ -12,6 +12,7 @@ class Rollcall {
     required this.status,
     required this.courseTitle,
     required this.rollcallTime,
+    this.createdByName = '',
   });
 
   /// 签到任务 ID。
@@ -28,6 +29,9 @@ class Rollcall {
 
   /// 签到发起时间，ISO8601 UTC。
   final String rollcallTime;
+
+  /// 教师姓名（对应 API `created_by_name`）。
+  final String createdByName;
 
   /// 是否未签到。
   bool get isAbsent => status == 'absent';
@@ -50,6 +54,7 @@ class Rollcall {
         status: json['status'] as String? ?? '',
         courseTitle: json['course_title'] as String? ?? '',
         rollcallTime: json['rollcall_time'] as String? ?? '',
+        createdByName: json['created_by_name'] as String? ?? '',
       );
 
   Map<String, dynamic> toJson() => {
@@ -58,11 +63,12 @@ class Rollcall {
         'status': status,
         'course_title': courseTitle,
         'rollcall_time': rollcallTime,
+        'created_by_name': createdByName,
       };
 
   @override
   String toString() => 'Rollcall(id=$rollcallId, type=$source, status=$status, '
-      'course=$courseTitle)';
+      'course=$courseTitle, teacher=$createdByName)';
 }
 
 /// 签到结果（与 rollcall-go 的 `CheckinResult` 对应）。
@@ -87,6 +93,9 @@ class StudentRollcallsData {
     required this.isNumber,
     required this.numberCode,
     required this.rollcalls,
+    this.courseTitle = '',
+    this.classroom = '',
+    this.teacher = '',
   });
 
   /// 当前签到是否为数字码签到。
@@ -97,6 +106,15 @@ class StudentRollcallsData {
 
   /// 班级成员签到状态列表。
   final List<StudentRollcall> rollcalls;
+
+  /// 课程名称。
+  final String courseTitle;
+
+  /// 教室（如 `2306`、`综合实验楼A305`）。
+  final String classroom;
+
+  /// 教师姓名。
+  final String teacher;
 
   /// 状态为 `on_call` 的成员数。
   int get checkedInCount => rollcalls.where((r) => r.isOnCall).length;
@@ -110,6 +128,9 @@ class StudentRollcallsData {
       isNumber: json['is_number'] as bool? ?? false,
       numberCode: json['number_code'] as String? ?? '',
       rollcalls: list,
+      courseTitle: json['course_title'] as String? ?? '',
+      classroom: json['classroom'] as String? ?? '',
+      teacher: json['teacher'] as String? ?? '',
     );
   }
 }
