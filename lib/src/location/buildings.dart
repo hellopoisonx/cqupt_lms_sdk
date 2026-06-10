@@ -49,6 +49,7 @@ const List<NamedBuilding> otherBuildings = [
   NamedBuilding('灯光篮球场', 29.532465, 106.608514),
   NamedBuilding('风华运动场', 29.532786, 106.607568),
   NamedBuilding('太极运动场', 29.532896, 106.609731),
+  NamedBuilding('乒乓球馆', 29.532465, 106.608514),
 ];
 
 /// 把教学楼基础坐标加上 ±20m 随机抖动。

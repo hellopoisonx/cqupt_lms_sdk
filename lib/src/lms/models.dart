@@ -37,7 +37,10 @@ class Rollcall {
   bool get isAbsent => status == 'absent';
 
   /// 是否已签到。
-  bool get isOnCall => status == 'on_call';
+  ///
+  /// API 返回的状态可能是 `on_call`、`on_call_fine` 等变体，
+  /// 凡以 `on_call` 开头均视为已签到。
+  bool get isOnCall => status.startsWith('on_call');
 
   /// 是否二维码签到。
   bool get isQr => source == 'qr';
@@ -141,7 +144,7 @@ class StudentRollcall {
 
   final String status;
 
-  bool get isOnCall => status == 'on_call';
+  bool get isOnCall => status.startsWith('on_call');
   bool get isAbsent => status == 'absent';
 
   factory StudentRollcall.fromJson(Map<String, dynamic> json) =>

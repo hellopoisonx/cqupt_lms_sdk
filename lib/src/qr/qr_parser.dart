@@ -9,16 +9,18 @@ library;
 
 const _qrHexRe = r'^[a-f0-9]{42}$';
 final RegExp _qrDataRegexp = RegExp(_qrHexRe, caseSensitive: false);
-final RegExp _qrUrlRegexp = RegExp(r'!3~([a-fA-F0-9]+)');
+final RegExp _qrUrlRegexp = RegExp(r'!3~([a-fA-F0-9]+)!4~');
+final RegExp _qrUrlFallbackRegexp = RegExp(r'!3~([a-fA-F0-9]+)');
 
 /// 从原始 QR 字符串中提取 42 位 hex。
 ///
 /// 返回空字符串表示无法解析或已过期。
 String extractQrData(String rawData, {DateTime? now}) {
   var data = rawData;
-  // 1. URL 格式：从 `!3~<hex>!4~` 提取
+  // 1. URL 格式：优先从 `!3~<hex>!4~` 提取，无闭合时回退到 `!3~<hex>`
   if (data.startsWith('/j?p=') || data.contains('!3~')) {
-    final m = _qrUrlRegexp.firstMatch(data);
+    var m = _qrUrlRegexp.firstMatch(data);
+    m ??= _qrUrlFallbackRegexp.firstMatch(data);
     if (m == null) return '';
     data = m.group(1) ?? '';
   }
