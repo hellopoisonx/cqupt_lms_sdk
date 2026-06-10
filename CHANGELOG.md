@@ -9,3 +9,4 @@
 - Poller：异步事件流 + 课表感知轮询 + 自动签到。
 - 单元测试 36 个全通过。
 - 不包含 Center WebSocket / Kitex RPC / Etcd 注册等分布式组件。
+- 添加 MIT 开源许可证。
