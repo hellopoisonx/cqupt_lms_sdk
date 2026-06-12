@@ -1,4 +1,3 @@
-
 ## 未发布
 
 - `Rollcall` 新增 `createdByName`（教师姓名）字段。
@@ -6,7 +5,13 @@
 - 新增 `乒乓球馆` 坐标（指向灯光篮球场位置）。
 - `isOnCall` 匹配逻辑从 `== 'on_call'` 改为 `startsWith('on_call')`，覆盖 `on_call_fine` 等 API 返回的已签到变体。
 - `StudentRollcallsData` 新增 `courseTitle`、`classroom`、`teacher` 字段，补齐签到详情。
-# 0.1.0
+- **修复 IDS 登录失败（"未收到有效 Location 头"）**：与 rollcall-go 对齐登录链路。
+  - 修复 `_resolveLoginUrl` 中 `$sep=service=` 字符串模板笔误，POST URL 不再是 `…/login?=service=…`，IDS 不再回 `exception.message=A problem occurred restoring the flow execution`。
+  - `IdsHttpCore.fetchLoginPage` 不再解析 `<form action>`，POST URL 固定为 `baseUrl?service=<targetService>`。
+  - `LmsClient._resolveServiceUrl` 跟 2 跳重定向（与 Go 一致），返回最终 URL 字符串本身，不再走 `lmsBase/login` 兜底。
+  - `IdsConfig.userAgent` 默认值改为 Chrome/86，与 rollcall-go 一致。
+  - `_baseHeaders` 不再自动加 `Origin` 头。
+  - 新增 `test/login_flow_test.dart` 两条回归测试。
 
 - 初版：复刻 CQUPT-CAS-SDK + rollcall-go 的核心客户端能力。
 - CAS 登录（带图形验证码可选求解器、踢出会话二次确认）。

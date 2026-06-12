@@ -361,11 +361,21 @@ class LmsClient {
   // ------------------------------------------------------------------
 
   /// 跟随 /login 重定向链，提取 CAS service URL。
-  /// 返回 `(serviceUrl, didRedirect)`。
+  ///
+  /// 与 rollcall-go 的 [getCallbackURL] 对齐：
+  /// - 最多跟 **2 跳** 重定向（Keycloak SSO 代理后只关心前两跳）；
+  /// - 返回最终 URL 字符串本身（不做 query 拆解），由 IDS 服务端校验
+  ///   service 是否合法。早期版本会从 query 里剥 `service` 再用兜底值
+  ///   `lmsBase/login` 回填，与 Go 端发到 IDS 的 service 不一致，导致
+  ///   IDS 拒签 ticket。
+  ///
+  /// 返回 `(serviceUrl, didRedirect)`；当完全无重定向时 serviceUrl 为空，
+  /// 调用方应视为登录前置条件未满足。
   Future<(String, bool)> _resolveServiceUrl() async {
     var current = '${_config.lmsBase}/login';
     var redirected = false;
-    for (var i = 0; i < 20; i++) {
+    // 与 rollcall-go 一致：最多 2 跳。
+    for (var i = 0; i < 2; i++) {
       final resp = await _request('GET', current);
       if (!_isRedirect(resp.statusCode)) break;
       final loc = resp.headers['location'];
@@ -373,15 +383,7 @@ class LmsClient {
       current = _resolveUrl(current, loc);
       redirected = true;
     }
-    // 从最终 URL 的 query 中提取 service 参数值（原始 service URL）。
-    try {
-      final uri = Uri.parse(current);
-      final svc = uri.queryParameters['service'];
-      if (svc != null && svc.isNotEmpty) {
-        return (Uri.decodeQueryComponent(svc), redirected);
-      }
-    } on FormatException { /* fall through */ }
-    return (redirected ? '${_config.lmsBase}/login' : '', redirected);
+    return (current, redirected);
   }
 
   Future<void> _followAllRedirects(String startUrl) async {

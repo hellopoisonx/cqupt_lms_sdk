@@ -3,8 +3,11 @@
 /// 负责：
 /// - 维护一个有序的 cookie 存储（同名后到达覆盖）；
 /// - 模拟 Go `HttpSpyderCore` 的 `checkNeedCaptcha` / `getCaptcha` 流程；
-/// - 解析登录页提取 salt、execution、form action；
+/// - 解析登录页提取 salt、execution（不再解析 `<form action>`）；
 /// - 提交表单并返回最终 `Location`（含「踢出会话」二次确认）。
+///
+/// POST URL 固定为 `baseUrl?service=<targetService>`，与 rollcall-go 一致；
+/// 历史版本曾根据 form action 改写 POST URL，因字符串模板笔误而废弃。
 library;
 
 import 'dart:async';
@@ -21,8 +24,10 @@ import 'extractor.dart';
 class IdsConfig {
   const IdsConfig({
     this.baseUrl = 'https://ids.cqupt.edu.cn/authserver/login',
+    // 与 rollcall-go 的 userAgent 字面值一致：服务端风控策略对 UA 敏感，
+    // 偏离 Go 的历史 UA 可能触发验证码弹窗或拒绝签发 ticket。
     this.userAgent =
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
     this.timeout = const Duration(seconds: 15),
     this.maxRetries = 3,
     this.retryDelay = const Duration(seconds: 1),
@@ -62,9 +67,6 @@ class IdsHttpCore {
   /// `name -> value`，按首次插入顺序保存，用于稳定地输出 `Cookie` 头。
   final Map<String, String> _cookieMap = <String, String>{};
   final List<String> _cookieOrder = <String>[];
-
-  /// 登录表单实际 POST 的目标 URL。空时退回 `baseUrl?service=...`。
-  String? _postUrl;
 
   /// 当前累积的 `Cookie` 头。
   String get cookies {
@@ -145,8 +147,8 @@ class IdsHttpCore {
       'Cookie': cookies,
     };
     if (contentType != null) h['Content-Type'] = contentType;
-    final origin = _originOf(config.baseUrl);
-    if (origin.isNotEmpty) h['Origin'] = origin;
+    // 不显式设置 Origin：与 rollcall-go 的请求序列一致，
+    // 避免服务端 Origin 校验差异导致 401/400。
     return h;
   }
 
@@ -218,7 +220,14 @@ class IdsHttpCore {
     await _get(url);
   }
 
-  /// Step 2：访问登录页，提取 salt / execution / form action。
+  /// Step 2：访问登录页，提取 salt / execution。
+  ///
+  /// 不再解析 `<form action>`：早期实现把 form action 解析后拼成 POST URL，
+  /// 但拼接时 `$sep=service=…` 模板笔误会让 URL 变成 `…/login?=service=…`，
+  /// 服务端会回 `exception.message=A problem occurred restoring the flow
+  /// execution with key '…'`，导致登录后拿不到合法 Location。
+  /// 现在与 rollcall-go 对齐：永远 POST 到 `baseUrl?service=<targetService>`。
+  /// [formAction] 字段保留为兼容历史 API，永远为空字符串。
   Future<IdsLoginPage> fetchLoginPage() async {
     final url = '${config.baseUrl}?service=$_targetService';
     final resp = await _get(url);
@@ -230,17 +239,10 @@ class IdsHttpCore {
       'id="execution"',
       'name="execution"',
     ]);
-    final formAction = extractAnyFormAction(
-      resp.body,
-      ['pwdFromId', 'casLoginForm'],
-    );
-    if (formAction.isNotEmpty) {
-      _postUrl = _resolveLoginUrl(formAction);
-    }
     return IdsLoginPage(
       pwdEncryptSalt: salt,
       execution: execution,
-      formAction: formAction,
+      formAction: '',
     );
   }
 
@@ -358,35 +360,13 @@ class IdsHttpCore {
         '&execution=${Uri.encodeQueryComponent(execution)}';
   }
 
-  String _loginPostUrl() {
-    if (_postUrl != null && _postUrl!.isNotEmpty) return _postUrl!;
-    return '${config.baseUrl}?service=$_targetService';
-  }
+  /// 登录表单 POST 目标 URL。
+  ///
+  /// 与 rollcall-go 对齐：固定为 `baseUrl?service=<targetService>`。
+  /// 早期实现曾尝试解析 `<form action>` 再拼 service，但模板字符串
+  /// `$sep=service=` 存在笔误（会变成 `?=service=`），已彻底弃用。
+  String _loginPostUrl() => '${config.baseUrl}?service=$_targetService';
 
-  String _resolveLoginUrl(String action) {
-    try {
-      final base = Uri.parse(config.baseUrl);
-      final ref = Uri.parse(action);
-      final resolved = base.resolveUri(ref);
-      if (resolved.queryParameters['service'] == null && _targetService.isNotEmpty) {
-        final sep = resolved.hasQuery ? '&' : '?';
-        return '${resolved.toString()}$sep=service=$_targetService';
-      }
-      return resolved.toString();
-    } on FormatException {
-      return '${config.baseUrl}?service=$_targetService';
-    }
-  }
-
-  String _originOf(String raw) {
-    try {
-      final u = Uri.parse(raw);
-      if (u.scheme.isEmpty || u.host.isEmpty) return '';
-      return '${u.scheme}://${u.host}';
-    } on FormatException {
-      return '';
-    }
-  }
 }
 
 bool _isRedirect(int code) =>
