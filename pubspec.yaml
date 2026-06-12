@@ -1,6 +1,6 @@
 name: cqupt_lms_sdk
 description: 重庆邮电大学统一身份认证 (CAS) 与 LMS 签到 Dart SDK。
-version: 0.1.0
+version: 0.2.0
 publish_to: none
 
 environment:

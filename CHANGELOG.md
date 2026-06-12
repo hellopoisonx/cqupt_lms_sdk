@@ -1,4 +1,4 @@
-## 未发布
+## 0.2.0
 
 - `Rollcall` 新增 `createdByName`（教师姓名）字段。
 - 对齐 CQUPT-Rollcall-Project 参考实现：QR 提取正则优先匹配 `!3~...!4~` 闭合分隔符，无闭合时回退。
