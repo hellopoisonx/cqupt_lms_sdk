@@ -22,10 +22,22 @@
 
 ## 安装
 
+SDK **未发布到 pub.dev**，仅托管在 GitHub 私有仓库。请在调用方项目的 `pubspec.yaml` 中以 git 源引入：
+
 ```yaml
 dependencies:
   cqupt_lms_sdk:
-    path: .
+    git:
+      url: https://github.com/hellopoisonx/cqupt_lms_sdk.git
+      ref: v0.2.0   # 或 main / 某个 commit
+```
+
+若要本地联调 SDK 源码，可改用 `path`：
+
+```yaml
+dependencies:
+  cqupt_lms_sdk:
+    path: ../cqupt_lms_sdk
 ```
 
 要求 Dart `^3.12.0`。

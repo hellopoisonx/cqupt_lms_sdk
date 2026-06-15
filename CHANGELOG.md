@@ -1,5 +1,6 @@
 ## 0.2.0
 
+- 安装方式变更：未发布到 pub.dev，仅托管在 GitHub（`https://github.com/hellopoisonx/cqupt_lms_sdk.git`），调用方需以 git 源引入。
 - `Rollcall` 新增 `createdByName`（教师姓名）字段。
 - 对齐 CQUPT-Rollcall-Project 参考实现：QR 提取正则优先匹配 `!3~...!4~` 闭合分隔符，无闭合时回退。
 - 新增 `乒乓球馆` 坐标（指向灯光篮球场位置）。
